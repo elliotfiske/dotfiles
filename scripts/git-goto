@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+
+# git-goto: Switch to any git branch interactively.
+#
+# If the script is discoverable via PATH, then git will pick it up and make it
+# available as `goto` subcommand.
+#
+# Dependencies:
+#
+#   - fzf, https://github.com/junegunn/fzf
+#
+# Example:
+#
+#   # NOTE: the script is located in `~/.bin` directory
+#   # which is included into PATH.
+#
+#   git goto
+
+set -o errexit   # Always exit on error
+set -o nounset   # Treat unset variables as errors
+
+# List all git branches (only local) except current and HEAD.
+# Sort by most recently active.
+# For now, filter out only my branches. May update this to an argument in the future.
+# Additionally remove all leading spaces for each line of the list.
+branches=$(git branch --all --sort=-committerdate | grep efiske | grep --invert-match "remote" | grep --invert-match --extended-regexp "^\*|HEAD" | sed "s/.* //")
+
+# Select a branch to switch to using interactive fuzzy search applied to
+# the list of branches.
+#
+# If one of remote branches is selected, then remove `remotes/*/` prefix
+# from the name, e.g. `remotes/origin/foo-bar` becomes `foo-bar`
+branch=$(echo "$branches" | fzf --height=20% | sed "s#remotes/[^/]*/##")
+
+# Switch to a selected branch.
+if [[ -n "$branch" ]]
+then
+  git checkout "$branch"
+fi
